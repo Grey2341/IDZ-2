@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Хрестики-нулики</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f7f7f7;
+            border-radius: 10px;
+        }
+
+        .current-turn {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .turn-symbol {
+            display: inline-block;
+            font-size: 1.5em;
+            margin-left: 5px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            background: #f0f0f0;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            font-size: 3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            min-height: 100px;
+            height: 100%;
+        }
+
+        .cell:hover:not(.filled) {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .cell.filled {
+            cursor: not-allowed;
+        }
+
+        .cell.winning {
+            background: #4ade80;
+            animation: winning 0.5s;
+        }
+
+        @keyframes winning {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-reset {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .btn-new-game {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-new-game:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .scoreboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+
+        .score-item {
+            padding: 15px;
+            border-radius: 10px;
+            background: #f7f7f7;
+        }
+
+        .score-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: modalAppear 0.3s;
+        }
+
+        @keyframes modalAppear {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-title {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .modal-message {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .modal-btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            background: #667eea;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 500px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .cell {
+                font-size: 2em;
+            }
+
+            .modal-title {
+                font-size: 2em;
+            }
+
+            .modal-message {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Хрестики-нулики</h1>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="pvp">👥 Два гравці</button>
+            <button class="mode-btn" data-mode="bot">🤖 Проти бота</button>
+        </div>
+
+        <div class="game-info">
+            <div class="current-turn">
+                Хід: <span class="turn-symbol" id="turnSymbol">X</span>
+            </div>
+            <div class="game-mode" id="gameMode">Режим: Два гравці</div>
+        </div>
+
+        <div class="board" id="board">
+            <button class="cell" data-index="0"></button>
+            <button class="cell" data-index="1"></button>
+            <button class="cell" data-index="2"></button>
+            <button class="cell" data-index="3"></button>
+            <button class="cell" data-index="4"></button>
+            <button class="cell" data-index="5"></button>
+            <button class="cell" data-index="6"></button>
+            <button class="cell" data-index="7"></button>
+            <button class="cell" data-index="8"></button>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-reset" id="resetBtn">🔄 Скинути поле</button>
+            <button class="btn btn-new-game" id="newGameBtn">🆕 Нова гра</button>
+        </div>
+
+        <div class="scoreboard">
+            <div class="score-item">
+                <div class="score-label">Перемоги X</div>
+                <div class="score-value" id="scoreX">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Нічиї</div>
+                <div class="score-value" id="scoreDraw">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Перемоги O</div>
+                <div class="score-value" id="scoreO">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">🎉</div>
+            <div class="modal-message" id="modalMessage"></div>
+            <button class="modal-btn" id="modalBtn">Грати ще раз</button>
+        </div>
+    </div>
+
+    <script>
+        // Ігрова логіка
+        class TicTacToe {
+            constructor() {
+                this.board = Array(9).fill(null);
+                this.currentPlayer = 'X';
+                this.gameMode = 'pvp'; // 'pvp' або 'bot'
+                this.gameActive = true;
+                this.scores = {
+                    X: 0,
+                    O: 0,
+                    draw: 0
+                };
+                
+                this.winPatterns = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Рядки
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Стовпці
+                    [0, 4, 8], [2, 4, 6]             // Діагоналі
+                ];
+
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadScores();
+                this.updateDisplay();
+            }
+
+            setupEventListeners() {
+                // Клітинки поля
+                document.querySelectorAll('.cell').forEach(cell => {
+                    cell.addEventListener('click', (e) => this.handleCellClick(e));
+                });
+
+                // Кнопки режиму
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.changeMode(e));
+                });
+
+                // Кнопки управління
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetBoard());
+                document.getElementById('newGameBtn').addEventListener('click', () => this.newGame());
+                document.getElementById('modalBtn').addEventListener('click', () => this.closeModal());
+            }
+
+            handleCellClick(e) {
+                const cell = e.target;
+                const index = parseInt(cell.dataset.index);
+
+                if (!this.gameActive || this.board[index]) {
+                    return;
+                }
+
+                this.makeMove(index, this.currentPlayer);
+
+                if (this.gameMode === 'bot' && this.gameActive && this.currentPlayer === 'O') {
+                    setTimeout(() => this.botMove(), 500);
+                }
+            }
+
+            makeMove(index, player) {
+                this.board[index] = player;
+                const cell = document.querySelector(`[data-index="${index}"]`);
+                cell.textContent = player;
+                cell.classList.add('filled');
+
+                if (this.checkWinner(player)) {
+                    this.endGame(player);
+                    return;
+                }
+
+                if (this.checkDraw()) {
+                    this.endGame('draw');
+                    return;
+                }
+
+                this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
+                this.updateDisplay();
+            }
+
+            botMove() {
+                if (!this.gameActive) return;
+
+                const move = this.getBestMove();
+                this.makeMove(move, 'O');
+            }
+
+            getBestMove() {
+                // Спочатку перевіряємо, чи бот може виграти
+                for (let i = 0; i < 9; i++) {
+                    if (!this.board[i]) {
+                        this.board[i] = 'O';
+                        if (this.checkWinner('O')) {
+                            this.board[i] = null;
+                            return i;
+                        }
+                        this.board[i] = null;
+                    }
+                }
+
+                // Потім блокуємо можливість перемоги гравця
+                for (let i = 0; i < 9; i++) {
+                    if (!this.board[i]) {
+                        this.board[i] = 'X';
+                        if (this.checkWinner('X')) {
+                            this.board[i] = null;
+                            return i;
+                        }
+                        this.board[i] = null;
+                    }
+                }
+
+                // Пріоритет центру
+                if (!this.board[4]) {
+                    return 4;
+                }
+
+                // Пріоритет кутів
+                const corners = [0, 2, 6, 8];
+                const availableCorners = corners.filter(i => !this.board[i]);
+                if (availableCorners.length > 0) {
+                    return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+                }
+
+                // Будь-яка вільна клітинка
+                const available = this.board
+                    .map((cell, index) => cell === null ? index : null)
+                    .filter(index => index !== null);
+                
+                return available[Math.floor(Math.random() * available.length)];
+            }
+
+            checkWinner(player) {
+                const winningPattern = this.winPatterns.find(pattern => 
+                    pattern.every(index => this.board[index] === player)
+                );
+
+                if (winningPattern) {
+                    winningPattern.forEach(index => {
+                        document.querySelector(`[data-index="${index}"]`).classList.add('winning');
+                    });
+                    return true;
+                }
+
+                return false;
+            }
+
+            checkDraw() {
+                return this.board.every(cell => cell !== null);
+            }
+
+            endGame(result) {
+                this.gameActive = false;
+
+                setTimeout(() => {
+                    if (result === 'draw') {
+                        this.scores.draw++;
+                        this.showModal('😐 Нічия!', 'Ніхто не переміг у цій грі');
+                    } else {
+                        this.scores[result]++;
+                        const winnerName = result === 'X' ? 
+                            'Гравець X' : 
+                            (this.gameMode === 'bot' ? 'Бот' : 'Гравець O');
+                        this.showModal(`🎉 Переміг ${result}!`, `${winnerName} виграв цю гру!`);
+                    }
+
+                    this.saveScores();
+                    this.updateScoreboard();
+                }, 500);
+            }
+
+            showModal(title, message) {
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalMessage').textContent = message;
+                document.getElementById('modal').classList.add('show');
+            }
+
+            closeModal() {
+                document.getElementById('modal').classList.remove('show');
+                this.resetBoard();
+            }
+
+            resetBoard() {
+                this.board = Array(9).fill(null);
+                this.currentPlayer = 'X';
+                this.gameActive = true;
+
+                document.querySelectorAll('.cell').forEach(cell => {
+                    cell.textContent = '';
+                    cell.classList.remove('filled', 'winning');
+                });
+
+                this.updateDisplay();
+            }
+
+            newGame() {
+                this.resetBoard();
+                this.scores = { X: 0, O: 0, draw: 0 };
+                this.saveScores();
+                this.updateScoreboard();
+            }
+
+            changeMode(e) {
+                const mode = e.target.dataset.mode;
+                this.gameMode = mode;
+
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                e.target.classList.add('active');
+
+                document.getElementById('gameMode').textContent = 
+                    mode === 'pvp' ? 'Режим: Два гравці' : 'Режим: Проти бота';
+
+                this.resetBoard();
+            }
+
+            updateDisplay() {
+                document.getElementById('turnSymbol').textContent = this.currentPlayer;
+            }
+
+            updateScoreboard() {
+                document.getElementById('scoreX').textContent = this.scores.X;
+                document.getElementById('scoreO').textContent = this.scores.O;
+                document.getElementById('scoreDraw').textContent = this.scores.draw;
+            }
+
+            saveScores() {
+                localStorage.setItem('ticTacToeScores', JSON.stringify(this.scores));
+            }
+
+            loadScores() {
+                const saved = localStorage.getItem('ticTacToeScores');
+                if (saved) {
+                    this.scores = JSON.parse(saved);
+                    this.updateScoreboard();
+                }
+            }
+        }
+
+        // Запуск гри
+        const game = new TicTacToe();
+    </script>
+</body>
+</html>
